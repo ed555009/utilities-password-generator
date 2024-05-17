@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using Utilities.PasswordGenerator.Interfaces;
 
@@ -32,7 +33,7 @@ namespace Utilities.PasswordGenerator.Services
 			int totalRequired = requiredUppercase + requiredLowercase + requiredNumeric + requiredSpecialChar;
 
 			if (length < 8 || length > 32)
-				throw new ArgumentOutOfRangeException("Password length must be between 8 and 32 characters");
+				throw new ArgumentOutOfRangeException(nameof(length), "Password length must be between 8 and 32 characters");
 
 			if (length < totalRequired)
 				throw new ArgumentException($"Password length must be at least {totalRequired}");
@@ -44,31 +45,41 @@ namespace Utilities.PasswordGenerator.Services
 			if (specialChars.Length == 0)
 				requiredSpecialChar = 0;
 
-			Random random = new Random(Guid.NewGuid().GetHashCode());
 			StringBuilder password = new StringBuilder();
 
 			// ensure the password contains at least X of each type of character
 			for (int i = 0; i < requiredUppercase; i++)
-				password.Append(upperCase[random.Next(upperCase.Length)]);
+				password.Append(upperCase[GetRandomNumber(upperCase.Length)]);
 
 			for (int i = 0; i < requiredLowercase; i++)
-				password.Append(lowerCase[random.Next(lowerCase.Length)]);
+				password.Append(lowerCase[GetRandomNumber(lowerCase.Length)]);
 
 			for (int i = 0; i < requiredNumeric; i++)
-				password.Append(numeric[random.Next(numeric.Length)]);
+				password.Append(numeric[GetRandomNumber(numeric.Length)]);
 
 			for (int i = 0; i < requiredSpecialChar; i++)
-				password.Append(specialChars[random.Next(specialChars.Length)]);
+				password.Append(specialChars[GetRandomNumber(specialChars.Length)]);
 
 			// fill the rest of the password length with a random mix of all categories
 			string allChars = upperCase + lowerCase + numeric + specialChars;
 			int requiredChars = requiredUppercase + requiredLowercase + requiredNumeric + requiredSpecialChar;
 
 			for (int i = requiredChars; i < length; i++)
-				password.Append(allChars[random.Next(allChars.Length)]);
+				password.Append(allChars[GetRandomNumber(allChars.Length)]);
 
 			// shuffle the password
-			return new string(password.ToString().OrderBy(_ => random.Next()).ToArray());
+			return new string(password.ToString().OrderBy(_ => GetRandomNumber(int.MaxValue)).ToArray());
+		}
+
+		int GetRandomNumber(int max)
+		{
+			using (var rng = new RNGCryptoServiceProvider())
+			{
+				byte[] data = new byte[4];
+				rng.GetBytes(data);
+				int value = BitConverter.ToInt32(data, 0);
+				return Math.Abs(value % max);
+			}
 		}
 	}
 }
