@@ -20,6 +20,6 @@ namespace Utilities.PasswordGenerator.Interfaces
 			int requiredLowercase = 1,
 			int requiredNumeric = 1,
 			int requiredSpecialChar = 1,
-			string specialChars = "!@#$%^&*()-_=+<>?");
+			string specialChars = "!@#$%^*()-_=+?");
 	}
 }
