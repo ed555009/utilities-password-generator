@@ -42,7 +42,7 @@ namespace Utilities.PasswordGenerator.Services
 			const string lowerCase = "abcdefghijkmnopqrstuvwxyz";
 			const string numeric = "23456789";
 
-			if (specialChars.Length == 0)
+			if (specialChars == null || specialChars.Length == 0)
 				requiredSpecialChar = 0;
 
 			StringBuilder password = new StringBuilder();

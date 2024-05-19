@@ -18,21 +18,6 @@ Ambiguous avoid, generated password will not contain `0` `O` `1` `I` `l`
 dotnet add package Utilities.PasswordGenerator
 ```
 
-## Add services(optional)
-
-You can add the service to the DI container.
-
-```csharp
-using Utilities.PasswordGenerator.Interfaces;
-using Utilities.PasswordGenerator.Services;
-
-ConfigureServices(IServiceCollection services)
-{
-	// this injects as SINGLETON
-	services.AddSingleton<IPasswordGeneratorService, PasswordGeneratorService>();
-}
-```
-
 ## Using service
 
 ### Simple usage
@@ -109,7 +94,7 @@ public class MyProcess
 }
 ```
 
-In case you don't want any special characters, you can set `specialChars` to empty string.
+In case you don't want any special characters, you can set `specialChars` to empty string or null.
 
 ```csharp
 using Utilities.PasswordGenerator.Services;
@@ -121,12 +106,27 @@ public class MyProcess
 		var passwordGeneratorService = new PasswordGeneratorService();
 
 		// generate 16 characters password with at least 1 uppercase, 1 lowercase, 1 numeric and no special character
-		return passwordGeneratorService.Generate(16, specialChars: "");
+		return passwordGeneratorService.Generate(16, specialChars: null);
 	}
 }
 ```
 
-### Use dependency injection
+## Use dependency injection
+
+### Register services
+
+```csharp
+using Utilities.PasswordGenerator.Interfaces;
+using Utilities.PasswordGenerator.Services;
+
+ConfigureServices(IServiceCollection services)
+{
+	// this injects as SINGLETON
+	services.AddSingleton<IPasswordGeneratorService, PasswordGeneratorService>();
+}
+```
+
+### Using service
 
 ```csharp
 using Utilities.PasswordGenerator.Interfaces;
