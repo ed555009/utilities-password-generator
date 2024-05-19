@@ -29,6 +29,21 @@ public class PasswordGeneratorServiceTests
 	}
 
 	[Theory]
+	[InlineData("!@#$%^*()-_=+?")]
+	[InlineData(null)]
+	public void Generate_WithCustomSpecialChars_ShouldSuccess(string? specialChars)
+	{
+		// Given
+		var service = new PasswordGeneratorService();
+
+		// When
+		var result = service.Generate(8, 1, 1, 1, 1, specialChars);
+
+		// Then
+		Assert.Equal(8, result.Length);
+	}
+
+	[Theory]
 	[InlineData(7)]
 	[InlineData(33)]
 	public void Generate_WithLengthOutOfRange_ShouldThrow(int length)
