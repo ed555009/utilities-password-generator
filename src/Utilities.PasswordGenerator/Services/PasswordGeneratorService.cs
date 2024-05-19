@@ -110,7 +110,7 @@ public class PasswordGeneratorService : IPasswordGeneratorService
 	/// <exception cref="ArgumentNullException">Thrown when the password is null.</exception>
 	public HashedPasswordModel Hash(string? password)
 	{
-		ArgumentNullException.ThrowIfNull(password, nameof(password));
+		ArgumentNullException.ThrowIfNull(password);
 
 		var saltByte = RandomNumberGenerator.GetBytes(_keySize);
 		var hash = Rfc2898DeriveBytes.Pbkdf2(
@@ -135,9 +135,9 @@ public class PasswordGeneratorService : IPasswordGeneratorService
 	/// <exception cref="ArgumentNullException">Thrown when the password, salt, or hash in the hashed password model is null.</exception>
 	public bool Verify(VerifyPasswordModel data)
 	{
-		ArgumentNullException.ThrowIfNull(data.Password, nameof(data.Password));
-		ArgumentNullException.ThrowIfNull(data.Salt, nameof(data.Salt));
-		ArgumentNullException.ThrowIfNull(data.Hash, nameof(data.Hash));
+		ArgumentNullException.ThrowIfNull(data.Password);
+		ArgumentNullException.ThrowIfNull(data.Salt);
+		ArgumentNullException.ThrowIfNull(data.Hash);
 
 		var comparer = Rfc2898DeriveBytes.Pbkdf2(
 			data.Password,
