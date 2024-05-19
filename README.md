@@ -111,6 +111,60 @@ public class MyProcess
 }
 ```
 
+## Password hashing
+
+Password hashing function uses the `PBKDF2` (Password-Based Key Derivation Function 2) algorithm to generate secure password hash, includes two key parameters:
+
+- `_keySize: 128`
+Generates a random salt value byte array using the RandomNumberGenerator.GetBytes method. With _keySize set to 128, this means the generated salt value will have 128 bytes (256 characters).
+
+- `_iterations: 12_800`
+
+These parameters control the output size of the hash calculation and the computational strength, thereby enhancing the security of passwords. This provides a robust password hashing solution suitable for applications requiring high security.
+
+Hashed password will return in `HashedPasswordModel` object which contains `Hash` and `Salt`, you should store both values for later password verification.
+
+### Generate password hash
+
+```csharp
+using Utilities.PasswordGenerator.Services;
+
+public class MyProcess
+{
+	public HashedPasswordModel GenerateHashed()
+	{
+		var passwordGeneratorService = new PasswordGeneratorService();
+
+		// generate hash of 16 characters password with at least 1 uppercase, 1 lowercase, 1 numeric and 1 special character
+		return passwordGeneratorService.GenerateHashed(16);
+	}
+}
+```
+
+### Verify password
+```csharp
+using Utilities.PasswordGenerator.Services;
+
+public class MyProcess
+{
+	public bool Verify()
+	{
+		var passwordGeneratorService = new PasswordGeneratorService();
+
+		// prepare password, hash and salt
+		var data = new HashedPasswordModel
+		{
+			Password = "PLAINTEXT_PASSWORD",
+			Hash = "HASH",
+			Salt = "SALT"
+		};
+
+		// verify password with hash and salt
+		return passwordGeneratorService.Verify(data);
+	}
+}
+```
+
 ## Use dependency injection
 
 ### Register services
