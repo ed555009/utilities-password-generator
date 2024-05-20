@@ -127,6 +127,7 @@ Hashed password will return in `HashedPasswordModel` object which contains `Hash
 ### Generate password hash
 
 ```csharp
+using Utilities.PasswordGenerator.Models.Responses;
 using Utilities.PasswordGenerator.Services;
 
 public class MyProcess
@@ -142,7 +143,9 @@ public class MyProcess
 ```
 
 ### Verify password
+
 ```csharp
+using Utilities.PasswordGenerator.Models.Requests;
 using Utilities.PasswordGenerator.Services;
 
 public class MyProcess
@@ -152,7 +155,7 @@ public class MyProcess
 		var passwordGeneratorService = new PasswordGeneratorService();
 
 		// prepare password, hash and salt
-		var data = new HashedPasswordModel
+		var data = new VerifyPasswordModel
 		{
 			Password = "PLAINTEXT_PASSWORD",
 			Hash = "HASH",
