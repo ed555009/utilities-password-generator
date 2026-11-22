@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Utilities.PasswordGenerator.Interfaces;
+using Utilities.PasswordGenerator.Internal;
 using Utilities.PasswordGenerator.Models.Requests;
 using Utilities.PasswordGenerator.Models.Responses;
 
@@ -110,20 +111,17 @@ public class PasswordGeneratorService : IPasswordGeneratorService
 	/// <exception cref="ArgumentNullException">Thrown when the password is null.</exception>
 	public HashedPasswordModel Hash(string? password)
 	{
-		ArgumentNullException.ThrowIfNull(password);
+		if (password is null)
+			throw new ArgumentNullException(nameof(password));
 
-		var saltByte = RandomNumberGenerator.GetBytes(_keySize);
-		var hash = Rfc2898DeriveBytes.Pbkdf2(
-			Encoding.UTF8.GetBytes(password),
-			saltByte,
-			_iterations,
-			_hashAlgorithm,
-			_keySize);
+		var saltByte = new byte[_keySize];
+		RandomNumberGenerator.Fill(saltByte);
+		var hash = DeriveKey(Encoding.UTF8.GetBytes(password), saltByte);
 
 		return new HashedPasswordModel
 		{
-			Hash = Convert.ToHexString(hash),
-			Salt = Convert.ToHexString(saltByte)
+			Hash = HexConverter.ToHexString(hash),
+			Salt = HexConverter.ToHexString(saltByte)
 		};
 	}
 
@@ -135,20 +133,41 @@ public class PasswordGeneratorService : IPasswordGeneratorService
 	/// <exception cref="ArgumentNullException">Thrown when the password, salt, or hash in the hashed password model is null.</exception>
 	public bool Verify(VerifyPasswordModel data)
 	{
-		ArgumentNullException.ThrowIfNull(data.Password);
-		ArgumentNullException.ThrowIfNull(data.Salt);
-		ArgumentNullException.ThrowIfNull(data.Hash);
+		if (data.Password is null)
+			throw new ArgumentNullException(nameof(data.Password));
 
-		var comparer = Rfc2898DeriveBytes.Pbkdf2(
-			data.Password,
-			Convert.FromHexString(data.Salt),
-			_iterations,
-			_hashAlgorithm,
-			_keySize);
+		if (data.Salt is null)
+			throw new ArgumentNullException(nameof(data.Salt));
 
-		return comparer.SequenceEqual(Convert.FromHexString(data.Hash));
+		if (data.Hash is null)
+			throw new ArgumentNullException(nameof(data.Hash));
+
+		var comparer = DeriveKey(Encoding.UTF8.GetBytes(data.Password), HexConverter.FromHexString(data.Salt));
+
+		return comparer.SequenceEqual(HexConverter.FromHexString(data.Hash));
 	}
 
-	static int GetRandomNumber(int max) =>
-		Math.Abs(BitConverter.ToInt32(RandomNumberGenerator.GetBytes(4), 0) % max);
+	/// <summary>
+	/// Derives the PBKDF2 key of the password with the salt.
+	/// </summary>
+	/// <param name="password">The UTF-8 bytes of the password.</param>
+	/// <param name="salt">The salt.</param>
+	/// <returns>The derived key.</returns>
+	/// <remarks>
+	/// netstandard2.1 does not contain the one-shot method Rfc2898DeriveBytes.Pbkdf2. The result is the same.
+	/// </remarks>
+	private byte[] DeriveKey(byte[] password, byte[] salt)
+	{
+		using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, _iterations, _hashAlgorithm);
+
+		return pbkdf2.GetBytes(_keySize);
+	}
+
+	/// <summary>
+	/// Gets a random number from 0 to <paramref name="max"/> - 1.
+	/// </summary>
+	/// <param name="max">The exclusive upper bound.</param>
+	/// <returns>A random number.</returns>
+	private static int GetRandomNumber(int max) =>
+		RandomNumberGenerator.GetInt32(max);
 }
