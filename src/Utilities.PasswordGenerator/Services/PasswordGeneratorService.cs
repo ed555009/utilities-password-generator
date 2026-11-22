@@ -10,11 +10,17 @@ namespace Utilities.PasswordGenerator.Services;
 /// <summary>
 /// Service class for generating passwords.
 /// </summary>
-public class PasswordGeneratorService : IPasswordGeneratorService
+public sealed class PasswordGeneratorService : IPasswordGeneratorService
 {
-	private readonly int _keySize = 128;
-	private readonly int _iterations = 12_800;
-	private readonly HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA512;
+	/// <summary>
+	/// The default special characters of <see cref="Generate"/>.
+	/// </summary>
+	public const string DefaultSpecialChars = "!@#$%^*()-_=+?";
+
+	private const int SaltSize = 128;
+	private const int HashSize = 128;
+	private const int Iterations = 12_800;
+	private static readonly HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA512;
 
 	/// <summary>
 	/// Generates a password with the specified requirements.
@@ -34,7 +40,7 @@ public class PasswordGeneratorService : IPasswordGeneratorService
 		int requiredLowercase = 1,
 		int requiredNumeric = 1,
 		int requiredSpecialChar = 1,
-		string? specialChars = "!@#$%^*()-_=+?")
+		string? specialChars = DefaultSpecialChars)
 	{
 		int totalRequired = requiredUppercase + requiredLowercase + requiredNumeric + requiredSpecialChar;
 
@@ -94,7 +100,7 @@ public class PasswordGeneratorService : IPasswordGeneratorService
 		int requiredLowercase = 1,
 		int requiredNumeric = 1,
 		int requiredSpecialChar = 1,
-		string? specialChars = "!@#$%^*()-_=+?") =>
+		string? specialChars = DefaultSpecialChars) =>
 			Hash(Generate(
 					length,
 					requiredUppercase,
@@ -109,12 +115,12 @@ public class PasswordGeneratorService : IPasswordGeneratorService
 	/// <param name="password">The password to hash.</param>
 	/// <returns>A hashed password model containing the hashed password and salt.</returns>
 	/// <exception cref="ArgumentNullException">Thrown when the password is null.</exception>
-	public HashedPasswordModel Hash(string? password)
+	public HashedPasswordModel Hash(string password)
 	{
 		if (password is null)
 			throw new ArgumentNullException(nameof(password));
 
-		var saltByte = new byte[_keySize];
+		var saltByte = new byte[SaltSize];
 		RandomNumberGenerator.Fill(saltByte);
 		var hash = DeriveKey(Encoding.UTF8.GetBytes(password), saltByte);
 
@@ -158,9 +164,9 @@ public class PasswordGeneratorService : IPasswordGeneratorService
 	/// </remarks>
 	private byte[] DeriveKey(byte[] password, byte[] salt)
 	{
-		using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, _iterations, _hashAlgorithm);
+		using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, _hashAlgorithm);
 
-		return pbkdf2.GetBytes(_keySize);
+		return pbkdf2.GetBytes(HashSize);
 	}
 
 	/// <summary>

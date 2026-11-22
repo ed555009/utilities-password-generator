@@ -1,5 +1,6 @@
 using Utilities.PasswordGenerator.Models.Requests;
 using Utilities.PasswordGenerator.Models.Responses;
+using Utilities.PasswordGenerator.Services;
 
 namespace Utilities.PasswordGenerator.Interfaces;
 
@@ -18,12 +19,12 @@ public interface IPasswordGeneratorService
 	/// <param name="requiredSpecialChar">The minimum number of special characters required in the password.</param>
 	/// <param name="specialChars">The special characters allowed in the password.</param>
 	/// <returns>A randomly generated password.</returns>
-	string Generate(int length = 8,
+	public string Generate(int length = 8,
 		int requiredUppercase = 1,
 		int requiredLowercase = 1,
 		int requiredNumeric = 1,
 		int requiredSpecialChar = 1,
-		string? specialChars = "!@#$%^*()-_=+?");
+		string? specialChars = PasswordGeneratorService.DefaultSpecialChars);
 
 	/// <summary>
 	/// Generates a hashed password with the specified requirements.
@@ -35,24 +36,24 @@ public interface IPasswordGeneratorService
 	/// <param name="requiredSpecialChar">The minimum number of special characters required in the password.</param>
 	/// <param name="specialChars">The special characters allowed in the password.</param>
 	/// <returns>A hashed password model containing the hashed password and the original password.</returns>
-	HashedPasswordModel GenerateHashed(int length = 8,
+	public HashedPasswordModel GenerateHashed(int length = 8,
 		int requiredUppercase = 1,
 		int requiredLowercase = 1,
 		int requiredNumeric = 1,
 		int requiredSpecialChar = 1,
-		string? specialChars = "!@#$%^*()-_=+?");
+		string? specialChars = PasswordGeneratorService.DefaultSpecialChars);
 
 	/// <summary>
 	/// Hashes the specified password.
 	/// </summary>
 	/// <param name="password">The password to hash.</param>
 	/// <returns>A hashed password model containing the hashed password and the original password.</returns>
-	HashedPasswordModel Hash(string? password);
+	public HashedPasswordModel Hash(string password);
 
 	/// <summary>
 	/// Verifies the specified password against the hashed password.
 	/// </summary>
 	/// <param name="data">The verify password model containing the hashed password and the password to verify.</param>
 	/// <returns>True if the password is verified, false otherwise.</returns>
-	bool Verify(VerifyPasswordModel data);
+	public bool Verify(VerifyPasswordModel data);
 }
