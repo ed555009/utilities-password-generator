@@ -1,12 +1,17 @@
 namespace Utilities.PasswordGenerator.Models.Responses;
 
 /// <summary>
-/// Represents a model for a hashed password.
+/// Represents a hashed password and the salt used to compute the hash.
 /// </summary>
-public class HashedPasswordModel : SaltModel
+public sealed class HashedPasswordModel
 {
 	/// <summary>
-	/// Gets or sets the hashed password.
+	/// Gets or sets the hash as an uppercase hex string.
 	/// </summary>
-	public string? Hash { get; set; }
+	public string Hash { get; set; } = string.Empty;
+
+	/// <summary>
+	/// Gets or sets the salt as an uppercase hex string.
+	/// </summary>
+	public string Salt { get; set; } = string.Empty;
 }
