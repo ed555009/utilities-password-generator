@@ -12,11 +12,57 @@
 
 Ambiguous avoid, generated password will not contain `0` `O` `1` `I` `l`
 
+The package targets `netstandard2.1` and `net10.0`. It runs on .NET Core 3.0 and later. .NET 10 and later use the `net10.0` assembly, which hashes about 3 times faster. See [Benchmark](#benchmark).
+
 ## Installation
 
 ```bash
 dotnet add package Utilities.PasswordGenerator
 ```
+
+## Upgrade to 10.0
+
+Version 10.0 has breaking changes. The major version follows the .NET version.
+
+### Target framework
+
+- Version 10.0 targets `netstandard2.1` and `net10.0`. Versions 6.0.x target `net6.0`.
+- Runtimes before .NET 10, for example .NET 8 and .NET 9, use the `netstandard2.1` assembly. `Hash` and `Verify` take about 3 times the .NET 10 time on these runtimes.
+
+### API
+
+| Version 6.0.x | Version 10.0 |
+|---|---|
+| `GenerateHashed(...)` | Removed. Call `Generate(...)`, then `Hash(password)`. |
+| `SaltModel` | Removed |
+| `VerifyPasswordModel` inherits `HashedPasswordModel` | `VerifyPasswordModel` has its own properties |
+| No iteration count | `Iterations` in `HashedPasswordModel` and `VerifyPasswordModel` |
+| None | `NeedsRehash(VerifyPasswordModel)` |
+
+- All classes are `sealed`.
+
+```csharp
+// Version 6.0.x
+var hashed = passwordGeneratorService.GenerateHashed(16);
+
+// Version 10.0: send the plaintext to the user once. Store only Hash, Salt and Iterations.
+var password = passwordGeneratorService.Generate(16);
+var hashed = passwordGeneratorService.Hash(password);
+```
+
+### Password hash
+
+- New hashes use 210,000 iterations, a 16-byte salt and a 64-byte hash.
+- Store `Iterations` together with `Hash` and `Salt`.
+- Set `Iterations = null` in `VerifyPasswordModel` for hashes from 6.0.x. `Verify` then uses the 6.0.x parameters.
+- Call `NeedsRehash` after a successful `Verify`. When it returns `true`, call `Hash` and store the new values.
+- `Hash` and `Verify` take more time in 10.0. See [Benchmark](#benchmark).
+
+### Arguments
+
+- `Generate` throws `ArgumentOutOfRangeException` for a negative count.
+- `Generate` throws `ArgumentException` for a letter, a digit, white space, a control character or a surrogate in `specialChars`.
+- `Verify` throws `ArgumentNullException` for `null` data.
 
 ## Using service
 
@@ -94,6 +140,9 @@ public class MyProcess
 }
 ```
 
+- `specialChars` must not contain letters, digits, white space, control characters or surrogates (for example emoji). `Generate` throws `ArgumentException` for these characters.
+- `Generate` removes duplicate characters from `specialChars`.
+
 In case you don't want any special characters, you can set `specialChars` to empty string or null.
 
 ```csharp
@@ -113,33 +162,31 @@ public class MyProcess
 
 ## Password hashing
 
-Password hashing function uses the `PBKDF2` (Password-Based Key Derivation Function 2) algorithm to generate secure password hash, includes two key parameters:
+`Hash` uses PBKDF2-HMAC-SHA512 (Password-Based Key Derivation Function 2) with these parameters:
 
-- `_keySize: 128`
-Generates a random salt value byte array using the RandomNumberGenerator.GetBytes method. With _keySize set to 128, this means the generated salt value will have 128 bytes (256 characters).
+| Parameter | Value |
+|---|---|
+| Iterations | 210,000 (the OWASP value for PBKDF2-HMAC-SHA512) |
+| Salt | 16 random bytes for each hash |
+| Hash | 64 bytes (the SHA-512 output size) |
 
-- `_iterations: 12_800`
+`Hash` returns a `HashedPasswordModel` with `Hash`, `Salt` and `Iterations`. `Hash` and `Salt` are uppercase hex strings. Store all 3 values. Do not store the plaintext password.
 
-These parameters control the output size of the hash calculation and the computational strength, thereby enhancing the security of passwords. This provides a robust password hashing solution suitable for applications requiring high security.
-
-Hashed password will return in `HashedPasswordModel` object which contains `Hash` and `Salt`, you should store both values for later password verification.
-
-### Generate password hash
+### Hash a password
 
 ```csharp
-using Utilities.PasswordGenerator.Models.Responses;
 using Utilities.PasswordGenerator.Services;
 
-public class MyProcess
-{
-	public HashedPasswordModel GenerateHashed()
-	{
-		var passwordGeneratorService = new PasswordGeneratorService();
+var passwordGeneratorService = new PasswordGeneratorService();
 
-		// generate hash of 16 characters password with at least 1 uppercase, 1 lowercase, 1 numeric and 1 special character
-		return passwordGeneratorService.GenerateHashed(16);
-	}
-}
+// Hash a password that the user chose.
+var hashed = passwordGeneratorService.Hash(password);
+
+// Or, generate an initial password. Send the plaintext to the user once.
+var initialPassword = passwordGeneratorService.Generate(16);
+var initialHashed = passwordGeneratorService.Hash(initialPassword);
+
+// Store hashed.Hash, hashed.Salt and hashed.Iterations.
 ```
 
 ### Verify password
@@ -148,25 +195,35 @@ public class MyProcess
 using Utilities.PasswordGenerator.Models.Requests;
 using Utilities.PasswordGenerator.Services;
 
-public class MyProcess
+var passwordGeneratorService = new PasswordGeneratorService();
+
+// Read Hash, Salt and Iterations from storage.
+var data = new VerifyPasswordModel
 {
-	public bool Verify()
+	Password = password,
+	Hash = stored.Hash,
+	Salt = stored.Salt,
+	// Set null for a hash from version 6.0.x.
+	Iterations = stored.Iterations
+};
+
+if (passwordGeneratorService.Verify(data))
+{
+	// Replace a hash with old parameters after a successful login.
+	if (passwordGeneratorService.NeedsRehash(data))
 	{
-		var passwordGeneratorService = new PasswordGeneratorService();
-
-		// prepare password, hash and salt
-		var data = new VerifyPasswordModel
-		{
-			Password = "PLAINTEXT_PASSWORD",
-			Hash = "HASH",
-			Salt = "SALT"
-		};
-
-		// verify password with hash and salt
-		return passwordGeneratorService.Verify(data);
+		var hashed = passwordGeneratorService.Hash(password);
+		// Store hashed.Hash, hashed.Salt and hashed.Iterations.
 	}
 }
 ```
+
+**Note:** `Verify` validates the stored values before the PBKDF2 computation.
+
+- `Verify` throws `ArgumentOutOfRangeException` when `Iterations` is not `null` and not from 210,000 to 1,000,000.
+- `Verify` throws `ArgumentException` when the hash length does not match `Iterations`: 128 bytes for `null`, 64 bytes otherwise.
+- `Verify` throws `FormatException` when `Hash` or `Salt` is not a hex string.
+- `Verify` compares the hashes in fixed time.
 
 ## Use dependency injection
 
@@ -193,7 +250,7 @@ public class MyProcess
 	private readonly IPasswordGeneratorService _passwordGeneratorService;
 
 	public MyProcess(IPasswordGeneratorService passwordGeneratorService) =>
-		_passwordGeneratorService = _passwordGeneratorService;
+		_passwordGeneratorService = passwordGeneratorService;
 
 	public string Generate() =>
 		_passwordGeneratorService.Generate();
