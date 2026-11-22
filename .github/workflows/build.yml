@@ -36,7 +36,10 @@ jobs:
       - name: Set up .NET SDK
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
-          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+          # The net8.0 test run loads the netstandard2.1 assembly. It needs the .NET 8 runtime.
+          dotnet-version: |
+            8.0.x
+            ${{ env.DOTNET_SDK_VERSION }}
 
       - name: Run unit tests with coverage
         run: >
@@ -48,7 +51,7 @@ jobs:
       - name: Generate coverage summary
         uses: danielpalme/ReportGenerator-GitHub-Action@70c37c4d588cff5bf9cf190830c6f01dfcfb884b # 5.6.1
         with:
-          reports: '**/coverage.opencover.xml'
+          reports: '**/coverage*.opencover.xml'
           targetdir: coverage-report
           reporttypes: MarkdownSummaryGithub
 
@@ -70,7 +73,10 @@ jobs:
       - name: Set up .NET SDK
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
-          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+          # The net8.0 test run loads the netstandard2.1 assembly. It needs the .NET 8 runtime.
+          dotnet-version: |
+            8.0.x
+            ${{ env.DOTNET_SDK_VERSION }}
 
       - name: Set up Java 17
         uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
@@ -94,7 +100,7 @@ jobs:
           /v:"$RELEASE_VERSION"
           /d:sonar.host.url=https://sonarcloud.io
           /d:sonar.token="$SONAR_TOKEN"
-          /d:sonar.cs.opencover.reportsPaths=**/coverage.opencover.xml
+          /d:sonar.cs.opencover.reportsPaths=**/coverage*.opencover.xml
 
       - name: Build for code scanning
         run: dotnet build "$SOLUTION" -c "$BUILD_CONFIGURATION"

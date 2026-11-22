@@ -255,13 +255,19 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 	/// <param name="hashSize">The output size in bytes.</param>
 	/// <returns>The derived key.</returns>
 	/// <remarks>
-	/// netstandard2.1 does not contain the one-shot method Rfc2898DeriveBytes.Pbkdf2. The result is the same.
+	/// The net10.0 assembly calls the one-shot method. The netstandard2.1 assembly uses the constructor. Both return the same bytes.
 	/// </remarks>
 	private static byte[] DeriveKey(byte[] password, byte[] salt, int iterations, int hashSize)
 	{
+#if NET
+		// Use the one-shot method. It calls the platform crypto library and takes about 37% of the time.
+		return Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, _hashAlgorithm, hashSize);
+#else
+		// netstandard2.1 does not contain the one-shot method.
 		using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations, _hashAlgorithm);
 
 		return pbkdf2.GetBytes(hashSize);
+#endif
 	}
 
 	/// <summary>
