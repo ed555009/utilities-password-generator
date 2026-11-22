@@ -43,8 +43,12 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 	/// <param name="requiredSpecialChar">The minimum number of special characters required (default is 1).</param>
 	/// <param name="specialChars">The special characters to include in the password (default is "!@#$%^*()-_=+?").</param>
 	/// <returns>A randomly generated password.</returns>
-	/// <exception cref="ArgumentOutOfRangeException">Thrown when the password length is less than 8 or greater than 32.</exception>
-	/// <exception cref="ArgumentException">Thrown when the password length is less than the total number of required characters.</exception>
+	/// <remarks>
+	/// <paramref name="specialChars"/> must not contain letters, digits, white space, control characters or surrogates.
+	/// Generate removes duplicate characters from <paramref name="specialChars"/>.
+	/// </remarks>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown when the password length is less than 8 or greater than 32, or a required count is negative.</exception>
+	/// <exception cref="ArgumentException">Thrown when the password length is less than the total number of required characters, or <paramref name="specialChars"/> contains a character that is not allowed.</exception>
 	public string Generate(
 		int length = 8,
 		int requiredUppercase = 1,
@@ -53,6 +57,11 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 		int requiredSpecialChar = 1,
 		string? specialChars = DefaultSpecialChars)
 	{
+		ThrowIfNegative(requiredUppercase, nameof(requiredUppercase));
+		ThrowIfNegative(requiredLowercase, nameof(requiredLowercase));
+		ThrowIfNegative(requiredNumeric, nameof(requiredNumeric));
+		ThrowIfNegative(requiredSpecialChar, nameof(requiredSpecialChar));
+
 		int totalRequired = requiredUppercase + requiredLowercase + requiredNumeric + requiredSpecialChar;
 
 		if (length < 8 || length > 32)
@@ -65,7 +74,9 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 		const string lowerCase = "abcdefghijkmnopqrstuvwxyz";
 		const string numeric = "23456789";
 
-		if (specialChars == null || specialChars.Length == 0)
+		specialChars = NormalizeSpecialChars(specialChars);
+
+		if (specialChars.Length == 0)
 			requiredSpecialChar = 0;
 
 		StringBuilder password = new StringBuilder();
@@ -80,9 +91,8 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 		for (int i = 0; i < requiredNumeric; i++)
 			password.Append(numeric[GetRandomNumber(numeric.Length)]);
 
-		if (specialChars != null)
-			for (int i = 0; i < requiredSpecialChar; i++)
-				password.Append(specialChars[GetRandomNumber(specialChars.Length)]);
+		for (int i = 0; i < requiredSpecialChar; i++)
+			password.Append(specialChars[GetRandomNumber(specialChars.Length)]);
 
 		// fill the rest of the password length with a random mix of all categories
 		string allChars = upperCase + lowerCase + numeric + specialChars;
@@ -92,7 +102,56 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 			password.Append(allChars[GetRandomNumber(allChars.Length)]);
 
 		// shuffle the password
-		return new string(password.ToString().OrderBy(_ => GetRandomNumber(int.MaxValue)).ToArray());
+		var chars = password.ToString().ToCharArray();
+		Shuffle(chars);
+
+		return new string(chars);
+	}
+
+	/// <summary>
+	/// Throws when a required character count is negative.
+	/// </summary>
+	/// <param name="value">The count.</param>
+	/// <param name="paramName">The parameter name of the count.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown when the count is negative.</exception>
+	private static void ThrowIfNegative(int value, string paramName)
+	{
+		// A negative count decreases the required total and makes the password longer than the length.
+		if (value < 0)
+			throw new ArgumentOutOfRangeException(paramName, value, "The count must be 0 or more.");
+	}
+
+	/// <summary>
+	/// Validates the special characters and removes duplicates.
+	/// </summary>
+	/// <param name="specialChars">The special characters. Null or empty means no special characters.</param>
+	/// <returns>The special characters without duplicates, or an empty string.</returns>
+	/// <exception cref="ArgumentException">Thrown when a character is a letter, a digit, white space, a control character or a surrogate.</exception>
+	private static string NormalizeSpecialChars(string? specialChars)
+	{
+		if (string.IsNullOrEmpty(specialChars))
+			return string.Empty;
+
+		// Reject letters and digits. They can add the ambiguous characters 0 O 1 I l.
+		// Reject surrogates. Generate selects 1 char at a time and splits a surrogate pair.
+		if (specialChars.Any(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c) || char.IsControl(c) || char.IsSurrogate(c)))
+			throw new ArgumentException("Special characters must not contain letters, digits, white space, control characters or surrogates.", nameof(specialChars));
+
+		// Remove duplicates. A duplicate character has a higher probability than the other characters.
+		return new string(specialChars.Distinct().ToArray());
+	}
+
+	/// <summary>
+	/// Shuffles the characters in place with the Fisher-Yates algorithm.
+	/// </summary>
+	/// <param name="chars">The characters to shuffle.</param>
+	private static void Shuffle(char[] chars)
+	{
+		for (var i = chars.Length - 1; i > 0; i--)
+		{
+			var j = GetRandomNumber(i + 1);
+			(chars[i], chars[j]) = (chars[j], chars[i]);
+		}
 	}
 
 	/// <summary>
