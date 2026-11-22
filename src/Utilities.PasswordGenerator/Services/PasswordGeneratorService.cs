@@ -162,8 +162,7 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 	/// <exception cref="ArgumentNullException">Thrown when the password is null.</exception>
 	public HashedPasswordModel Hash(string password)
 	{
-		if (password is null)
-			throw new ArgumentNullException(nameof(password));
+		ThrowIfNull(password, nameof(password));
 
 		var saltByte = new byte[SaltSize];
 		RandomNumberGenerator.Fill(saltByte);
@@ -185,25 +184,25 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 	/// <remarks>
 	/// Set <see cref="VerifyPasswordModel.Iterations"/> to null for a hash from version 6.0.x.
 	/// </remarks>
-	/// <exception cref="ArgumentNullException">Thrown when the data, or the password, salt or hash in the data, is null.</exception>
-	/// <exception cref="ArgumentOutOfRangeException">Thrown when the iteration count is not null and not from 210,000 to 1,000,000.</exception>
+	/// <exception cref="ArgumentNullException">Thrown when the data, or the password, salt or hash in the data, is null. ParamName is "data".</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown when the iteration count is not null and not from 210,000 to 1,000,000. ParamName is "data".</exception>
 	/// <exception cref="ArgumentException">Thrown when the hash length does not match the iteration count.</exception>
 	/// <exception cref="FormatException">Thrown when the hash or the salt is not a hex string.</exception>
 	public bool Verify(VerifyPasswordModel data)
 	{
-		if (data is null)
-			throw new ArgumentNullException(nameof(data));
+		ThrowIfNull(data, nameof(data));
 
+		// ParamName is the method parameter. The message names the property.
 		if (data.Password is null)
-			throw new ArgumentNullException(nameof(data.Password));
+			throw new ArgumentNullException(nameof(data), "data.Password must not be null.");
 
 		if (data.Salt is null)
-			throw new ArgumentNullException(nameof(data.Salt));
+			throw new ArgumentNullException(nameof(data), "data.Salt must not be null.");
 
 		if (data.Hash is null)
-			throw new ArgumentNullException(nameof(data.Hash));
+			throw new ArgumentNullException(nameof(data), "data.Hash must not be null.");
 
-		var (iterations, hashSize) = SelectParameters(data.Iterations);
+		var (iterations, hashSize) = SelectParameters(data.Iterations, nameof(data));
 		var expected = HexConverter.FromHexString(data.Hash);
 
 		if (expected.Length != hashSize)
@@ -223,8 +222,7 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 	/// <exception cref="ArgumentNullException">Thrown when the data is null.</exception>
 	public bool NeedsRehash(VerifyPasswordModel data)
 	{
-		if (data is null)
-			throw new ArgumentNullException(nameof(data));
+		ThrowIfNull(data, nameof(data));
 
 		return data.Iterations is null || data.Iterations < Iterations;
 	}
@@ -233,17 +231,35 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 	/// Selects the PBKDF2 parameters for the stored iteration count.
 	/// </summary>
 	/// <param name="iterations">The stored iteration count. Null means a hash from version 6.0.x.</param>
+	/// <param name="paramName">The parameter name of the caller that holds the iteration count.</param>
 	/// <returns>The iteration count and the hash size in bytes.</returns>
 	/// <exception cref="ArgumentOutOfRangeException">Thrown when the iteration count is not null and not from 210,000 to 1,000,000.</exception>
-	private static (int Iterations, int HashSize) SelectParameters(int? iterations)
+	private static (int Iterations, int HashSize) SelectParameters(int? iterations, string paramName)
 	{
 		if (iterations is null)
 			return (LegacyIterations, LegacyHashSize);
 
 		if (iterations < Iterations || iterations > MaxIterations)
-			throw new ArgumentOutOfRangeException(nameof(VerifyPasswordModel.Iterations), iterations, $"The iteration count must be from {Iterations} to {MaxIterations}.");
+			throw new ArgumentOutOfRangeException(paramName, iterations, $"data.Iterations must be from {Iterations} to {MaxIterations}.");
 
 		return (iterations.Value, HashSize);
+	}
+
+	/// <summary>
+	/// Throws when the value is null.
+	/// </summary>
+	/// <param name="value">The value to check.</param>
+	/// <param name="paramName">The parameter name of the value.</param>
+	/// <exception cref="ArgumentNullException">Thrown when the value is null.</exception>
+	private static void ThrowIfNull(object? value, string paramName)
+	{
+#if NET
+		ArgumentNullException.ThrowIfNull(value, paramName);
+#else
+		// netstandard2.1 does not contain ArgumentNullException.ThrowIfNull.
+		if (value is null)
+			throw new ArgumentNullException(paramName);
+#endif
 	}
 
 	/// <summary>
