@@ -27,23 +27,6 @@ public interface IPasswordGeneratorService
 		string? specialChars = PasswordGeneratorService.DefaultSpecialChars);
 
 	/// <summary>
-	/// Generates a hashed password with the specified requirements.
-	/// </summary>
-	/// <param name="length">The length of the password.</param>
-	/// <param name="requiredUppercase">The minimum number of uppercase characters required in the password.</param>
-	/// <param name="requiredLowercase">The minimum number of lowercase characters required in the password.</param>
-	/// <param name="requiredNumeric">The minimum number of numeric characters required in the password.</param>
-	/// <param name="requiredSpecialChar">The minimum number of special characters required in the password.</param>
-	/// <param name="specialChars">The special characters allowed in the password.</param>
-	/// <returns>A hashed password model containing the hashed password and the original password.</returns>
-	public HashedPasswordModel GenerateHashed(int length = 8,
-		int requiredUppercase = 1,
-		int requiredLowercase = 1,
-		int requiredNumeric = 1,
-		int requiredSpecialChar = 1,
-		string? specialChars = PasswordGeneratorService.DefaultSpecialChars);
-
-	/// <summary>
 	/// Hashes the specified password.
 	/// </summary>
 	/// <param name="password">The password to hash.</param>
