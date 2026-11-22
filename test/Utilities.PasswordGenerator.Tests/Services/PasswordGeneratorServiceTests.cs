@@ -135,10 +135,10 @@ public sealed class PasswordGeneratorServiceTests
 	}
 
 	[Theory]
-	[InlineData(null, null, null, "Password")]
-	[InlineData("password", null, null, "Salt")]
-	[InlineData("password", "salt", null, "Hash")]
-	public void Verify_NullField_ThrowsArgumentNullException(string? password, string? salt, string? hash, string paramName)
+	[InlineData(null, null, null, "data.Password")]
+	[InlineData("password", null, null, "data.Salt")]
+	[InlineData("password", "salt", null, "data.Hash")]
+	public void Verify_NullField_ThrowsArgumentNullException(string? password, string? salt, string? hash, string property)
 	{
 		// Given
 		var data = new VerifyPasswordModel
@@ -153,6 +153,8 @@ public sealed class PasswordGeneratorServiceTests
 
 		// Then
 		var ex = Assert.Throws<ArgumentNullException>(Act);
-		Assert.Equal(paramName, ex.ParamName);
+		// ParamName is the method parameter. The message names the property.
+		Assert.Equal("data", ex.ParamName);
+		Assert.Contains(property, ex.Message);
 	}
 }

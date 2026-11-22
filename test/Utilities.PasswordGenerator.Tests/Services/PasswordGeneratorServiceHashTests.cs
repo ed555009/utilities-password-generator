@@ -135,7 +135,9 @@ public sealed class PasswordGeneratorServiceHashTests
 
 		// Then
 		var ex = Assert.Throws<ArgumentOutOfRangeException>(Act);
-		Assert.Equal(nameof(VerifyPasswordModel.Iterations), ex.ParamName);
+		// ParamName is the method parameter. The message names the property.
+		Assert.Equal("data", ex.ParamName);
+		Assert.Contains("data.Iterations", ex.Message);
 	}
 
 	[Fact]

@@ -5,7 +5,7 @@ namespace Utilities.PasswordGenerator.Internal;
 /// </summary>
 /// <remarks>
 /// netstandard2.1 does not contain Convert.ToHexString and Convert.FromHexString.
-/// The output and the exceptions are the same as these methods.
+/// The net10.0 assembly calls Convert.ToHexString. The output and the exceptions are the same as these methods.
 /// </remarks>
 internal static class HexConverter
 {
@@ -15,7 +15,11 @@ internal static class HexConverter
 	/// <param name="bytes">The bytes to convert.</param>
 	/// <returns>The uppercase hex string. The length is 2 times the byte count.</returns>
 	public static string ToHexString(byte[] bytes) =>
+#if NET
+		Convert.ToHexString(bytes);
+#else
 		BitConverter.ToString(bytes).Replace("-", string.Empty);
+#endif
 
 	/// <summary>
 	/// Converts a hex string to bytes.
