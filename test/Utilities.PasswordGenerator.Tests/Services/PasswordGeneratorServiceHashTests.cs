@@ -60,6 +60,17 @@ public sealed class PasswordGeneratorServiceHashTests
 	}
 
 	[Fact]
+	public void Hash_NullPassword_ThrowsArgumentNullException()
+	{
+		// When
+		void Act() => _service.Hash(null!);
+
+		// Then
+		var ex = Assert.Throws<ArgumentNullException>(Act);
+		Assert.Equal("password", ex.ParamName);
+	}
+
+	[Fact]
 	public void Verify_CurrentHash_ReturnsTrue()
 	{
 		// When
@@ -220,7 +231,8 @@ public sealed class PasswordGeneratorServiceHashTests
 		void Act() => _service.NeedsRehash(null!);
 
 		// Then
-		_ = Assert.Throws<ArgumentNullException>(Act);
+		var ex = Assert.Throws<ArgumentNullException>(Act);
+		Assert.Equal("data", ex.ParamName);
 	}
 
 	/// <summary>

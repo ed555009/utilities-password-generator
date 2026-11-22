@@ -162,7 +162,13 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 	/// <exception cref="ArgumentNullException">Thrown when the password is null.</exception>
 	public HashedPasswordModel Hash(string password)
 	{
-		ThrowIfNull(password, nameof(password));
+#if NET
+		ArgumentNullException.ThrowIfNull(password);
+#else
+		// netstandard2.1 does not contain ArgumentNullException.ThrowIfNull.
+		if (password is null)
+			throw new ArgumentNullException(nameof(password));
+#endif
 
 		var saltByte = new byte[SaltSize];
 		RandomNumberGenerator.Fill(saltByte);
@@ -190,7 +196,13 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 	/// <exception cref="FormatException">Thrown when the hash or the salt is not a hex string.</exception>
 	public bool Verify(VerifyPasswordModel data)
 	{
-		ThrowIfNull(data, nameof(data));
+#if NET
+		ArgumentNullException.ThrowIfNull(data);
+#else
+		// netstandard2.1 does not contain ArgumentNullException.ThrowIfNull.
+		if (data is null)
+			throw new ArgumentNullException(nameof(data));
+#endif
 
 		// ParamName is the method parameter. The message names the property.
 		if (data.Password is null)
@@ -222,7 +234,13 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 	/// <exception cref="ArgumentNullException">Thrown when the data is null.</exception>
 	public bool NeedsRehash(VerifyPasswordModel data)
 	{
-		ThrowIfNull(data, nameof(data));
+#if NET
+		ArgumentNullException.ThrowIfNull(data);
+#else
+		// netstandard2.1 does not contain ArgumentNullException.ThrowIfNull.
+		if (data is null)
+			throw new ArgumentNullException(nameof(data));
+#endif
 
 		return data.Iterations is null || data.Iterations < Iterations;
 	}
@@ -243,23 +261,6 @@ public sealed class PasswordGeneratorService : IPasswordGeneratorService
 			throw new ArgumentOutOfRangeException(paramName, iterations, $"data.Iterations must be from {Iterations} to {MaxIterations}.");
 
 		return (iterations.Value, HashSize);
-	}
-
-	/// <summary>
-	/// Throws when the value is null.
-	/// </summary>
-	/// <param name="value">The value to check.</param>
-	/// <param name="paramName">The parameter name of the value.</param>
-	/// <exception cref="ArgumentNullException">Thrown when the value is null.</exception>
-	private static void ThrowIfNull(object? value, string paramName)
-	{
-#if NET
-		ArgumentNullException.ThrowIfNull(value, paramName);
-#else
-		// netstandard2.1 does not contain ArgumentNullException.ThrowIfNull.
-		if (value is null)
-			throw new ArgumentNullException(paramName);
-#endif
 	}
 
 	/// <summary>
