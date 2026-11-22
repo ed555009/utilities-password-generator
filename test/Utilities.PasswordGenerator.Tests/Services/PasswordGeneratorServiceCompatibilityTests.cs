@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Utilities.PasswordGenerator.Models.Requests;
 using Utilities.PasswordGenerator.Services;
 
@@ -11,9 +9,6 @@ namespace Utilities.PasswordGenerator.Tests.Services;
 /// </summary>
 public sealed class PasswordGeneratorServiceCompatibilityTests
 {
-	private const int LegacyIterations = 12_800;
-	private const int LegacyKeySize = 128;
-
 	private readonly PasswordGeneratorService _service = new();
 
 	/// <summary>
@@ -78,26 +73,5 @@ public sealed class PasswordGeneratorServiceCompatibilityTests
 
 		// Then
 		Assert.True(result);
-	}
-
-	[Theory]
-	[InlineData("abcd1234")]
-	[InlineData("Pässwörd-中文-!@#")]
-	public void Hash_AnyPassword_ReturnsSameHashAsVersion6Algorithm(string password)
-	{
-		// Given
-		var hashed = _service.Hash(password);
-
-		// When
-		// Compute the reference with the one-shot API that version 6.0.x calls.
-		var expected = Rfc2898DeriveBytes.Pbkdf2(
-			Encoding.UTF8.GetBytes(password),
-			Convert.FromHexString(hashed.Salt!),
-			LegacyIterations,
-			HashAlgorithmName.SHA512,
-			LegacyKeySize);
-
-		// Then
-		Assert.Equal(Convert.ToHexString(expected), hashed.Hash);
 	}
 }

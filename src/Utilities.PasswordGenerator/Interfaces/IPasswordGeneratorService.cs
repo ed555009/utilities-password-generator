@@ -27,16 +27,23 @@ public interface IPasswordGeneratorService
 		string? specialChars = PasswordGeneratorService.DefaultSpecialChars);
 
 	/// <summary>
-	/// Hashes the specified password.
+	/// Hashes the specified password with PBKDF2-HMAC-SHA512.
 	/// </summary>
 	/// <param name="password">The password to hash.</param>
-	/// <returns>A hashed password model containing the hashed password and the original password.</returns>
+	/// <returns>The hash, the salt and the iteration count. The result does not contain the password.</returns>
 	public HashedPasswordModel Hash(string password);
 
 	/// <summary>
-	/// Verifies the specified password against the hashed password.
+	/// Verifies the specified password against the stored hash.
 	/// </summary>
-	/// <param name="data">The verify password model containing the hashed password and the password to verify.</param>
-	/// <returns>True if the password is verified, false otherwise.</returns>
+	/// <param name="data">The password, the stored hash, the stored salt and the stored iteration count.</param>
+	/// <returns>True if the password matches the hash, false otherwise.</returns>
 	public bool Verify(VerifyPasswordModel data);
+
+	/// <summary>
+	/// Gets a value that shows if the stored hash uses parameters older than the current parameters.
+	/// </summary>
+	/// <param name="data">The stored values of the hash.</param>
+	/// <returns>True if the caller must compute a new hash with <see cref="Hash"/> after a successful <see cref="Verify"/>.</returns>
+	public bool NeedsRehash(VerifyPasswordModel data);
 }

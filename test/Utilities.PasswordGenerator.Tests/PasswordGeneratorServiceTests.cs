@@ -87,7 +87,8 @@ public class PasswordGeneratorServiceTests
 		{
 			Password = password,
 			Salt = hashed.Salt,
-			Hash = hashed.Hash
+			Hash = hashed.Hash,
+			Iterations = hashed.Iterations
 		});
 
 		// Then

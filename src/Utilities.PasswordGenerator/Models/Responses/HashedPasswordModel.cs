@@ -14,4 +14,9 @@ public sealed class HashedPasswordModel
 	/// Gets or sets the salt as an uppercase hex string.
 	/// </summary>
 	public string Salt { get; set; } = string.Empty;
+
+	/// <summary>
+	/// Gets or sets the PBKDF2 iteration count used to compute the hash.
+	/// </summary>
+	public int Iterations { get; set; }
 }

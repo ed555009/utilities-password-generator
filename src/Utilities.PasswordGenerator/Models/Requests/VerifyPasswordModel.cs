@@ -19,4 +19,12 @@ public sealed class VerifyPasswordModel
 	/// Gets or sets the stored salt as a hex string.
 	/// </summary>
 	public string? Salt { get; set; }
+
+	/// <summary>
+	/// Gets or sets the stored PBKDF2 iteration count.
+	/// </summary>
+	/// <remarks>
+	/// Set the value to null for a hash from version 6.0.x. Verify then uses the 6.0.x parameters.
+	/// </remarks>
+	public int? Iterations { get; set; }
 }
