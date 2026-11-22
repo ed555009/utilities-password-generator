@@ -1,7 +1,7 @@
 # Utilities.PasswordGenerator
 
 [![GitHub](https://img.shields.io/github/license/ed555009/utilities-password-generator)](LICENSE)
-![Build Status](https://dev.azure.com/edwang/github/_apis/build/status/utilities-password-generator?branchName=main)
+[![Build Status](https://github.com/ed555009/utilities-password-generator/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/ed555009/utilities-password-generator/actions/workflows/build.yml)
 [![Nuget](https://img.shields.io/nuget/v/Utilities.PasswordGenerator)](https://www.nuget.org/packages/Utilities.PasswordGenerator)
 
 ![Coverage](https://sonarcloud.io/api/project_badges/measure?project=utilities-password-generator&metric=coverage)
